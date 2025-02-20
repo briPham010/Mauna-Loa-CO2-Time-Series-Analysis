@@ -1,0 +1,39 @@
+---
+title: "Mauna Loa CO2 Time Series Analysis"
+author: "Brian Pham"
+date: "2025-01-19"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(fig.height=4, fig.width=6, warning=FALSE, tidy=TRUE, message = FALSE, tidy.opts=list(width.cutoff=60))
+```
+
+```{r}
+library(tidyverse)
+library(fpp3)
+library(ggplot2)
+
+file <- "co2_mm_gl.csv"
+climate_data <- read_csv(file, skip = 38)
+head(climate_data)
+
+```
+
+
+```{r}
+
+ggplot(climate_data, aes(x = decimal, y = average)) +
+geom_line(color = "blue") +  # Line plot for CO2 concentration
+labs(
+title = "Mauna Loa CO2 Concentration Over Time",
+x = "Year",
+y = "CO2 (ppm)"
+) +
+theme_minimal()
+
+
+```
