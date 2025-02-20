@@ -1,7 +1,7 @@
 ---
 title: "Mauna Loa CO2 Time Series Analysis"
 author: "Brian Pham"
-date: "2025-01-19"
+date: "2025-03-07"
 output:
   pdf_document: default
   html_document: default
@@ -27,7 +27,7 @@ head(climate_data)
 ```{r}
 
 ggplot(climate_data, aes(x = decimal, y = average)) +
-geom_line(color = "blue") +  # Line plot for CO2 concentration
+geom_line(color = "blue") +
 labs(
 title = "Mauna Loa CO2 Concentration Over Time",
 x = "Year",
