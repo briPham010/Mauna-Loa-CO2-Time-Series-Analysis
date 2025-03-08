@@ -7,7 +7,6 @@ output:
   html_document: default
 ---
 
-
 ```{r global_options, echo=FALSE}
 knitr::opts_chunk$set(fig.height=4, fig.width=6, warning=FALSE, tidy=TRUE, message = FALSE, tidy.opts=list(width.cutoff=60))
 ```
@@ -17,17 +16,24 @@ knitr::opts_chunk$set(fig.height=4, fig.width=6, warning=FALSE, tidy=TRUE, messa
 library(tidyverse)
 library(fpp3)
 library(ggplot2)
+library(dplyr)
+library(nortest)
+library(tseries)
+
+
 
 file <- "co2_mm_gl.csv"
 climate_data <- read_csv(file, skip = 38)
 head(climate_data)
 
+# filter data to only before 2020
+climate_data_clean <- climate_data %>%
+  filter(year < 2020)
 ```
 
-
 ```{r}
-
-ggplot(climate_data, aes(x = decimal, y = average)) +
+# plot of CO2 over the years
+ggplot(climate_data_clean, aes(x = decimal, y = average)) +
 geom_line(color = "blue") +
 labs(
 title = "Mauna Loa CO2 Concentration Over Time",
@@ -36,5 +42,95 @@ y = "CO2 (ppm)"
 ) +
 theme_minimal()
 
+# dividing the data by month
+climate_data_ts <- tsibble(month = yearmonth(seq(as.Date("1979-01-01"),
+                                                 as.Date("2019-12-01"),
+                                                 by = "1 month")),
+                           Time = climate_data_clean$decimal,
+                           CO2 = climate_data_clean$average,
+                           index = month)
 
+
+Month <- as_factor(month(climate_data_ts$month))
+
+climate_data_ts <- climate_data_ts %>% mutate(LogCO2 = log(CO2))
+
+# plot of Log(CO2) over the years by month
+
+mean_LogCO2 <- mean(climate_data_ts$LogCO2)
+climate_data_ts %>% autoplot(LogCO2) +
+  geom_point(aes(y=LogCO2, color=Month)) +
+  scale_color_manual(values = c("black", "blue", "purple", "red", "orange", "darkred", "green", "chartreuse4", 
+                                "chocolate", "gray60", "gold4", "salmon")) +
+  geom_hline(aes(yintercept = mean_LogCO2), lty=2) +
+  ggtitle("Log(CO2) vs. Month") + xlab("Month") + ylab("Log(CO2)") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+Visually the plot appears non-stationary but checking through the tests.
+
+```{r}
+
+time_series_components <- climate_data_ts %>% 
+  model(STL(LogCO2 ~ season(window="periodic"))) %>%
+  components()
+
+climate_data_ts <- climate_data_ts %>% 
+  add_column(seasonal = time_series_components$season_year,
+             LogCO2_SA = time_series_components$season_adjust)
+
+autoplot(time_series_components)
+
+
+mean_LogCO2 <- mean(climate_data_ts$LogCO2_SA)
+climate_data_ts %>% autoplot(LogCO2_SA) +
+  geom_point(aes(y=LogCO2_SA, color=Month)) +
+  scale_color_manual(values = c("black", "blue", "purple", "red", "orange", "darkred", "green", "chartreuse4", 
+                                "chocolate", "gray60", "gold4", "salmon")) +
+  geom_hline(aes(yintercept = mean_LogCO2), lty=2) +
+  ggtitle("Log(CO2) vs. Month") + xlab("Month") + ylab("Log(CO2)") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+climate_data_ts %>% ACF(LogCO2_SA) %>% autoplot()
+unitroot_kpss(climate_data_ts$LogCO2_SA)
+adf.test(climate_data_ts$LogCO2_SA)
+```
+The time series is clearly non-stationary because the p-value from the KPSS test is 0.01 which is less than 0.05. (not sure how to interpret Kpss test, need to add things about the ACF plot) And the large p-value of ADF test is evidence that the time series is non-stationary.
+
+```{r}
+# Computing first differences
+climate_data_ts <- climate_data_ts %>% mutate(diff_LogCO2_SA = difference(LogCO2_SA))
+head(climate_data_ts)
+tail(climate_data_ts)
+
+mean_diff_LogCO2_SA <- mean(climate_data_ts$diff_LogCO2_SA)
+
+climate_data_ts %>% autoplot(diff_LogCO2_SA) +
+  geom_point(aes(y=diff_LogCO2_SA, color=Month)) +
+  scale_color_manual(values = c("black", "blue", "purple", "red", "orange", "darkred", "green", "chartreuse4", 
+                                "chocolate", "gray60", "gold4", "salmon")) +
+  geom_hline(aes(yintercept = mean_diff_LogCO2_SA), lty=2) +
+  ggtitle("Log(CO2) vs. Month") + xlab("Month") + ylab("Log(CO2)") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+climate_data_ts %>% ACF(diff_LogCO2_SA) %>% autoplot()
+unitroot_kpss(climate_data_ts$diff_LogCO2_SA)
+adf.test(climate_data_ts$diff_LogCO2_SA[2:492])
+```
+(not sure how to interpret Kpss test, need to add things about the ACF plot) Since the p-value of the ADF test is less than 0.05, there is evidence to reject the null hypothesis in favor of the alternative hypothesis that the time series is stationary. 
+
+
+```{r}
+# choosing ARIMA model
+
+result_dcmp_ARIMA_SNAIVE <- climate_data_ts %>%
+  model(decomposition_model(
+    STL(CO2 ~ season(window="periodic")),
+    ARIMA(season_adjust ~ pdq(q=0) + PDQ(0,0,0),
+          stepwise=FALSE, approximation=FALSE, trace=TRUE),
+    SNAIVE(season_year)
+    ))
+
+report(result_dcmp_ARIMA_SNAIVE)
 ```
