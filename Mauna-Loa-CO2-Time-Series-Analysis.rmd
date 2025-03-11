@@ -1,6 +1,6 @@
 ---
 title: "Mauna Loa CO2 Time Series Analysis"
-author: "Brian Pham, Anya Ranavat"
+author: "Brian Pham, Anya Ranavat, Cindy Fan"
 date: "2025-03-07"
 output:
   pdf_document: default
