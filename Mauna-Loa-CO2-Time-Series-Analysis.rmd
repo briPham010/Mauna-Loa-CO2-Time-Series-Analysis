@@ -21,6 +21,7 @@ library(nortest)
 library(tseries)
 library(urca)
 ```
+### The question to investigate: "How can time series forecasting methods be effectively applied to historical Mauna Loa CO₂ concentration data to predict future CO₂ levels, and what do the identified trends and seasonal patterns reveal about the behavior of atmospheric CO₂ over time?"
 
 ```{r}
 file <- "co2_mm_gl.csv"
