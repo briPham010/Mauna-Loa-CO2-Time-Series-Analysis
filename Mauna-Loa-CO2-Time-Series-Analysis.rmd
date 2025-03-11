@@ -3,8 +3,8 @@ title: "Mauna Loa CO2 Time Series Analysis"
 author: "Brian Pham, Anya Ranavat, Cindy Fan"
 date: "2025-03-07"
 output:
-  pdf_document: default
-  html_document: default
+  pdf_document:
+    latex_engine: xelatex
 ---
 
 ```{r global_options, echo=FALSE}
