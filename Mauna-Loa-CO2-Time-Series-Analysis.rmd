@@ -1,6 +1,6 @@
 ---
 title: "Mauna Loa CO2 Time Series Analysis"
-author: "Brian Pham, Anya Ranavat, Cindy Fan"
+author: "Brian Pham, Anya Ranavat, Cindy Fan, Oliver Wu"
 date: "2025-03-07"
 output:
   pdf_document:
@@ -186,3 +186,22 @@ Time series forecasting methods can be effectively applied to the Mauna Loa CO�
 After adjusting for seasonality, the data were differenced to achieve stationarity. The best-fit model, based on the lowest AICc, was an ARIMA(5,1,0) with drift, indicating that a single differencing step and an allowance for a constant upward drift best capture the long-term growth in CO₂. Diagnostic checks (e.g., the residual ACF plot) showed no remaining autocorrelation, suggesting the model is well-specified and suitable for forecasting.
 
 Overall, the identified trend and seasonal patterns reveal that atmospheric CO₂ is on a persistent upward trajectory, punctuated by regular seasonal fluctuations likely driven by natural processes (e.g., plant growth and decay cycles). By accounting for both the seasonal effects and the underlying trend, the ARIMA model provides reliable forecasts of future CO₂ levels—showing continued increases over time—and underscores the importance of these methods for understanding and predicting the progression of atmospheric CO₂.
+
+```{r}
+# forecasting the next 5 observations using our chosen ARIMA (5,1,0) model
+forecast_result <- result_dcmp_ARIMA_SNAIVE %>%
+  forecast(h = 5)
+forecast_result
+# forecasted values
+autoplot(forecast_result) +
+  labs(title = "Forecast of CO2_SA using ARIMA(5,1,0)",
+       x = "Time",
+       y = "CO2_SA") +
+  theme_minimal()
+# forecasted values along with historical data
+autoplot(forecast_result, climate_data_ts) +
+  labs(title = "Forecast of CO2_SA using ARIMA(5,1,0) with Historical Data",
+       x = "Time",
+       y = "CO2_SA") +
+  theme_minimal()
+```
