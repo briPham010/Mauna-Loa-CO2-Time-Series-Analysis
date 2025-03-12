@@ -32,7 +32,7 @@ climate_data_clean <- climate_data %>%
   filter(year < 2020)
 ```
 
-### Figure 1: Mauna Loa CO₂ Concentration Over Time
+# Figure 1: Mauna Loa CO₂ Concentration Over Time
 
 ```{r}
 # dividing the data by month
@@ -67,7 +67,7 @@ By visualizing the raw data, this graph confirms that atmospheric CO₂ is incre
 -Conclusions Drawn:
 The steadily rising levels indicate that future forecasts must account for a persistent upward trend, emphasizing the need for a robust model that can handle both trend and seasonality.
 
-### Figure 2: Seasonally Adjusted CO₂ vs. Month
+# Figure 2: STL decomposition
 
 ```{r}
 # seasonally adjusted CO2
@@ -82,16 +82,9 @@ climate_data_ts <- climate_data_ts %>%
 autoplot(time_series_components)
 ```
 
--What It Shows:
-This graph displays CO₂ concentrations after removing seasonal effects, with data points color-coded by month.
 
--Why It’s Useful:
-By stripping out the seasonal component, the graph isolates the underlying trend and any anomalies that might be masked by regular seasonal patterns. It clearly shows that even after adjustment, the long-term upward trend remains.
 
--Conclusions Drawn:
-The presence of a consistent trend post-seasonal adjustment confirms that seasonal variations are significant but do not overshadow the overall increase. This validates the approach of using seasonally adjusted models for more reliable forecasting.
-
-## Figure 3: STL Decomposition Plot
+# Figure 3: Seasonally Adjusted CO2 over time & Figure 4: ACF Test
 
 ```{r}
 # plot of seasonally adjusted CO2 over time
@@ -111,18 +104,17 @@ climate_data_ts %>% ACF(CO2_SA) %>% autoplot()
 unitroot_kpss(climate_data_ts$CO2_SA)
 adf.test(climate_data_ts$CO2_SA)
 ```
-
-The time series is clearly non-stationary because the p-value from the KPSS test is 0.01 which is less than 0.05. And the large p-value of ADF test is evidence that the time series is non-stationary.
-
 -What It Shows:
-This plot breaks the time series into three components: trend, seasonal, and remainder (residuals).
+This graph displays CO₂ concentrations after removing seasonal effects, with data points color-coded by month.
 
 -Why It’s Useful:
-Decomposing the time series allows us to see exactly how much of the data’s variation is due to the seasonal cycle versus the long-term trend. This clear separation helps in selecting the right modeling strategy (in this case, an ARIMA model applied to the seasonally adjusted series).
+By stripping out the seasonal component, the graph isolates the underlying trend and any anomalies that might be masked by regular seasonal patterns. It clearly shows that even after adjustment, the long-term upward trend remains.
 
 -Conclusions Drawn:
-The decomposition confirms that the seasonal component is a significant part of the data’s structure. Recognizing this, the chosen ARIMA(5,1,0) with drift model is well justified since it addresses both the trend (through differencing and drift) and the seasonal variations (after STL adjustment).
+The presence of a consistent trend post-seasonal adjustment confirms that seasonal variations are significant but do not overshadow the overall increase. This validates the approach of using seasonally adjusted models for more reliable forecasting.
 
+
+# Figure 5: First Differences CO2 vs. Month
 ```{r}
 # Computing first differences
 climate_data_ts <- climate_data_ts %>% mutate(diff_CO2_SA = difference(CO2_SA))
@@ -148,6 +140,18 @@ adf.test(climate_data_ts$diff_CO2_SA[2:492])
 
 Since the p-value of the ADF test is less than 0.05, there is evidence to reject the null hypothesis in favor of the alternative hypothesis that the time series is stationary.
 
+The time series is clearly non-stationary because the p-value from the KPSS test is 0.01 which is less than 0.05. And the large p-value of ADF test is evidence that the time series is non-stationary.
+
+-What It Shows:
+This plot breaks the time series into three components: trend, seasonal, and remainder (residuals).
+
+-Why It’s Useful:
+Decomposing the time series allows us to see exactly how much of the data’s variation is due to the seasonal cycle versus the long-term trend. This clear separation helps in selecting the right modeling strategy (in this case, an ARIMA model applied to the seasonally adjusted series).
+
+-Conclusions Drawn:
+The decomposition confirms that the seasonal component is a significant part of the data’s structure. Recognizing this, the chosen ARIMA(5,1,0) with drift model is well justified since it addresses both the trend (through differencing and drift) and the seasonal variations (after STL adjustment).
+
+# Figure 6: ACF of ARIMA Model
 ```{r}
 # choosing ARIMA model
  
@@ -164,6 +168,8 @@ report(result_dcmp_ARIMA_SNAIVE)
 # Compute autocorrelation function of residuals
 result_dcmp_ARIMA_SNAIVE %>% augment() %>% ACF(.resid) %>% autoplot()
 ```
+-Explain what time series methods you are using to answer the question and why they are appropriate:
+We decided to force the model to take a first difference with a window of 21 to force the output to give a model with first difference instead of the second difference. After running the decomposition model on the seasonally adjusted CO2 values, the ARIMA model with the lowest AICc value of -791.65 is ARIMA(5,1,0) with drift model. The ACF plot of the ARIMA(5,1,0) with drift model displays most spikes are within the blue lines, showing that there is no pattern in the residuals.
 
 -What It Shows:
 This graph presents the autocorrelation function (ACF) plot for the residuals of the fitted ARIMA(5,1,0) model.
@@ -176,17 +182,8 @@ Since the residuals behave like white noise, we can conclude that the ARIMA mode
 
 Explain what time series methods you are using to answer the question and why they are appropriate.
 
-After I talked to the professor, we decided to force the model to take a first difference with a window of 21 to force the output to give a model with first difference instead of the second difference. After running the decomposition model on the seasonally adjusted CO2 values, the ARIMA model with the lowest AICc value of -791.65 is ARIMA(5,1,0) with drift model. The ACF plot of the ARIMA(5,1,0) with drift model displays most spikes are within the blue lines, showing that there is no pattern in the residuals.
 
-------------------------------------------------------------------------
-
-Overall conclusion: 
-Time series forecasting methods can be effectively applied to the Mauna Loa CO₂ record by first decomposing the data into its underlying trend and seasonal components, then modeling the seasonally adjusted series with an appropriate ARIMA model. In this analysis, STL decomposition was used to separate the data into trend, seasonality, and remainder (noise). The decomposition revealed a consistently increasing trend in atmospheric CO₂ concentrations, as well as a clear seasonal cycle that repeats each year.
-
-After adjusting for seasonality, the data were differenced to achieve stationarity. The best-fit model, based on the lowest AICc, was an ARIMA(5,1,0) with drift, indicating that a single differencing step and an allowance for a constant upward drift best capture the long-term growth in CO₂. Diagnostic checks (e.g., the residual ACF plot) showed no remaining autocorrelation, suggesting the model is well-specified and suitable for forecasting.
-
-Overall, the identified trend and seasonal patterns reveal that atmospheric CO₂ is on a persistent upward trajectory, punctuated by regular seasonal fluctuations likely driven by natural processes (e.g., plant growth and decay cycles). By accounting for both the seasonal effects and the underlying trend, the ARIMA model provides reliable forecasts of future CO₂ levels—showing continued increases over time—and underscores the importance of these methods for understanding and predicting the progression of atmospheric CO₂.
-
+# Figure 7: Forecast of CO2 using ARIMA (5,1,0)
 ```{r}
 # forecasting the next 5 observations using our chosen ARIMA (5,1,0) model
 forecast_result <- result_dcmp_ARIMA_SNAIVE %>%
@@ -205,3 +202,13 @@ autoplot(forecast_result, climate_data_ts) +
        y = "CO2_SA") +
   theme_minimal()
 ```
+
+
+------------------------------------------------------------------------
+
+Overall conclusion: 
+Time series forecasting methods can be effectively applied to the Mauna Loa CO₂ record by first decomposing the data into its underlying trend and seasonal components, then modeling the seasonally adjusted series with an appropriate ARIMA model. In this analysis, STL decomposition was used to separate the data into trend, seasonality, and remainder (noise). The decomposition revealed a consistently increasing trend in atmospheric CO₂ concentrations, as well as a clear seasonal cycle that repeats each year.
+
+After adjusting for seasonality, the data were differenced to achieve stationarity. The best-fit model, based on the lowest AICc, was an ARIMA(5,1,0) with drift, indicating that a single differencing step and an allowance for a constant upward drift best capture the long-term growth in CO₂. Diagnostic checks (e.g., the residual ACF plot) showed no remaining autocorrelation, suggesting the model is well-specified and suitable for forecasting.
+
+Overall, the identified trend and seasonal patterns reveal that atmospheric CO₂ is on a persistent upward trajectory, punctuated by regular seasonal fluctuations likely driven by natural processes (e.g., plant growth and decay cycles). By accounting for both the seasonal effects and the underlying trend, the ARIMA model provides reliable forecasts of future CO₂ levels—showing continued increases over time—and underscores the importance of these methods for understanding and predicting the progression of atmospheric CO₂.
